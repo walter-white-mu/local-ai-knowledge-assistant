@@ -1,4 +1,10 @@
 # Byte-compiled / optimized / DLL files
+# Local knowledge index and frontend dependencies
+data/
+node_modules/
+*.tsbuildinfo
+.ruff_cache/
+
 __pycache__/
 *.py[codz]
 *$py.class

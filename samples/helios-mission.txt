@@ -1,0 +1,11 @@
+HELIOS MISSION - SYNTHETIC DEMONSTRATION DOCUMENT
+
+This document describes a fictional project. All names, codes, dates, and measurements are invented for this portfolio demonstration.
+
+The Helios observatory launch code is ORBIT-42. The fictional launch review is scheduled for 17 March 2031 at the North Test Hangar.
+
+The Helios project lead is Mira Vale. Its backup lead is Theo Moss. The observatory's primary task is to measure fictional violet auroras over the imaginary moon Lumen.
+
+The Helios instrument budget is 240,000 fictional credits. The operations budget is 60,000 fictional credits. Budget approvals require signatures from both the project lead and the safety reviewer.
+
+The safety reviewer is Ada Reed. Launch approval requires a battery charge above 92 percent and a signed thermal inspection. The backup launch code is not recorded in this document.
