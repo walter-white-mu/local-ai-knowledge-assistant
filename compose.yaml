@@ -1,0 +1,61 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+  model-pull:
+    image: ollama/ollama:latest
+    profiles: [setup]
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text}
+      CHAT_MODEL: ${CHAT_MODEL:-qwen2.5:3b}
+    entrypoint: ["/bin/sh", "-c"]
+    command: ['ollama pull "$$EMBEDDING_MODEL" && ollama pull "$$CHAT_MODEL"']
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+  backend:
+    build: ./backend
+    environment:
+      DATA_DIR: /data
+      OLLAMA_URL: http://ollama:11434
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text}
+      CHAT_MODEL: ${CHAT_MODEL:-qwen2.5:3b}
+      OLLAMA_TIMEOUT: ${OLLAMA_TIMEOUT:-180}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
+      MAX_DOCUMENT_CHARS: ${MAX_DOCUMENT_CHARS:-500000}
+      CHUNK_SIZE: ${CHUNK_SIZE:-1200}
+      CHUNK_OVERLAP: ${CHUNK_OVERLAP:-200}
+      TOP_K: ${TOP_K:-5}
+      MIN_SIMILARITY: ${MIN_SIMILARITY:-0.45}
+    volumes:
+      - knowledge:/data
+    depends_on:
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  models:
+  knowledge:
