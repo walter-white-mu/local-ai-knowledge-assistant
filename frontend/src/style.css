@@ -54,6 +54,10 @@ svg { flex-shrink: 0; }
 .degraded .status-dot { background: #c28a49; }
 .model-name { display: block; margin-top: 3px; padding-left: 13px; font-size: 10px; color: var(--muted); }
 .chat { min-width: 0; min-height: 0; background: #fff; display: flex; flex-direction: column; }
+.assistant-tabs { display: flex; gap: 4px; padding: 10px 40px; border-bottom: 1px solid #edf0ee; background: #fbfcfb; }
+.assistant-tab { min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 12px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 550; white-space: nowrap; }
+.assistant-tab:hover { color: var(--green); background: #f1f5f2; }
+.assistant-tab.active { border-color: #e2e9e4; background: #fff; color: var(--green); box-shadow: 0 1px 2px #203c2c0a; }
 .chat-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 24px 40px; border-bottom: 1px solid #edf0ee; }
 .eyebrow { font-size: 9px; font-weight: 650; color: #8a948f; }
 .chat-toolbar h2 { font-family: 'Manrope Variable', 'Avenir Next', sans-serif; font-weight: 650; font-size: 18px; margin-top: 5px; }
@@ -85,6 +89,7 @@ svg { flex-shrink: 0; }
 .composer-bottom { display: flex; justify-content: space-between; align-items: center; color: #98a19b; font-size: 10px; }
 .send-button { display: grid; place-items: center; width: 32px; height: 32px; border: none; border-radius: 5px; background: var(--green); color: #fff; }
 .send-button:not(:disabled):hover { background: #194733; }
+.finance-note { margin: 12px max(32px, calc((100% - 760px) / 2)) 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
 .chat-footer { display: flex; justify-content: center; gap: 12px; font-size: 9px; color: #9ba59e; padding: 12px 20px 19px; overflow-wrap: anywhere; }
 .source-overlay { position: fixed; inset: 0; z-index: 20; width: 100%; max-width: none; height: 100dvh; max-height: none; margin: 0; padding: 0; border: 0; background: transparent; overflow: hidden; }
 .source-overlay[open] { display: flex; justify-content: flex-end; }
@@ -116,12 +121,15 @@ svg { flex-shrink: 0; }
   .model-heading, .model-name { display: none; }
   .model-status { font-size: 10px; }
   .chat { min-height: 540px; }
+  .assistant-tabs { padding: 9px 12px; }
+  .assistant-tab { gap: 5px; padding: 8px 5px; font-size: 11px; }
   .chat-toolbar { padding: 19px 22px; }
   .messages { padding: 24px 22px; max-height: 65dvh; min-height: 250px; }
   .welcome { padding: 28px 0; min-height: 260px; }
   .welcome h2 { font-size: 25px; }
   .welcome-symbol { width: 60px; height: 60px; margin-bottom: 18px; }
   .composer { margin: 10px 16px 0; }
+  .finance-note { margin: 10px 16px 0; }
   .question p { font-size: 16px; }
   .source-panel { padding: 24px; }
 }
