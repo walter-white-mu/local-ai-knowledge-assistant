@@ -2,19 +2,23 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import {
   ArrowUp, BookOpen, Check, ChevronRight, CircleAlert, FileText,
-  Layers, LoaderCircle, MessageSquarePlus, Plus, RefreshCw, Trash2, X,
+  Landmark, Layers, LoaderCircle, MessageSquarePlus, Plus, RefreshCw, Trash2, X,
 } from 'lucide-vue-next'
 import { request } from './api'
 import type { Answer, Citation, Document, Health } from './api'
 
 interface Turn { id: number; question: string; result?: Answer; error?: string }
+type Assistant = 'documents' | 'finance'
 const documents = ref<Document[]>([])
 const health = ref<Health | null>(null)
 const healthError = ref('')
 const error = ref('')
 const uploadStatus = ref('')
 const question = ref('')
-const turns = ref<Turn[]>([])
+const activeAssistant = ref<Assistant>('documents')
+const conversations = ref<Record<Assistant, Turn[]>>({ documents: [], finance: [] })
+const turns = computed(() => conversations.value[activeAssistant.value])
+const assistantName = computed(() => activeAssistant.value === 'documents' ? 'Document Assistant' : 'Finance Assistant')
 const uploading = ref(false)
 const asking = ref(false)
 const deleting = ref<string | null>(null)
@@ -97,7 +101,7 @@ async function removeDocument(document: Document) {
   try {
     await request<void>(`/documents/${document.id}`, { method: 'DELETE' })
     documents.value = documents.value.filter(item => item.id !== document.id)
-    turns.value = []
+    conversations.value = { documents: [], finance: [] }
     activeCitation.value = null
     uploadStatus.value = ''
   } catch (caught) { error.value = messageOf(caught) }
@@ -112,8 +116,9 @@ async function scrollToLatest() {
 async function ask() {
   const text = question.value.trim()
   if (!text || busy.value || !documents.value.length) return
+  const conversation = conversations.value[activeAssistant.value]
   const turn: Turn = { id: Date.now(), question: text }
-  turns.value.push(turn)
+  conversation.push(turn)
   question.value = ''
   asking.value = true
   activeCitation.value = null
@@ -123,10 +128,10 @@ async function ask() {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question: text }),
     })
-    const current = turns.value.find(item => item.id === turn.id)
+    const current = conversation.find(item => item.id === turn.id)
     if (current) current.result = result
   } catch (caught) {
-    const current = turns.value.find(item => item.id === turn.id)
+    const current = conversation.find(item => item.id === turn.id)
     if (current) current.error = messageOf(caught)
     await checkHealth()
   } finally {
@@ -137,7 +142,15 @@ async function ask() {
 
 function newConversation() {
   if (busy.value) return
-  turns.value = []
+  conversations.value[activeAssistant.value] = []
+  activeCitation.value = null
+}
+
+function selectAssistant(assistant: Assistant) {
+  if (activeAssistant.value === assistant) return
+  activeAssistant.value = assistant
+  question.value = ''
+  error.value = ''
   activeCitation.value = null
 }
 
@@ -153,9 +166,9 @@ onMounted(() => { void loadDocuments(); void checkHealth() })
 <template>
   <div class="workspace">
     <header class="topbar">
-      <a class="brand" href="/" aria-label="Local AI Knowledge Assistant home">
+      <a class="brand" href="/" aria-label="Local AI Assistant home">
         <span class="brand-mark"><Layers :size="23" /></span>
-        <span>Local AI <strong>Knowledge Assistant</strong></span>
+        <span>Local AI <strong>Assistant</strong></span>
       </a>
       <span class="local-label"><span class="status-dot" /> LOCAL WORKSPACE</span>
     </header>
@@ -198,20 +211,31 @@ onMounted(() => { void loadDocuments(); void checkHealth() })
     </aside>
 
     <main class="chat">
-      <div class="chat-toolbar"><div><span class="eyebrow">WORKSPACE</span><h2>Conversation</h2></div>
+      <nav class="assistant-tabs" aria-label="Assistant views">
+        <button class="assistant-tab" :class="{ active: activeAssistant === 'documents' }"
+          :aria-pressed="activeAssistant === 'documents'" @click="selectAssistant('documents')">
+          <BookOpen :size="16" />Document Assistant
+        </button>
+        <button class="assistant-tab" :class="{ active: activeAssistant === 'finance' }"
+          :aria-pressed="activeAssistant === 'finance'" @click="selectAssistant('finance')">
+          <Landmark :size="16" />Finance Assistant
+        </button>
+      </nav>
+      <div class="chat-toolbar"><div><span class="eyebrow">{{ activeAssistant === 'documents' ? 'DOCUMENT WORKSPACE' : 'FINANCE WORKSPACE' }}</span><h2>{{ assistantName }}</h2></div>
         <button class="icon-button" title="New conversation" aria-label="New conversation" :disabled="busy || !turns.length"
           @click="newConversation"><MessageSquarePlus :size="20" /></button>
       </div>
       <div ref="messages" class="messages" aria-live="polite" aria-relevant="additions text">
         <div v-if="!turns.length" class="welcome">
-          <div class="welcome-symbol"><BookOpen :size="35" :stroke-width="1.3" /></div>
-          <span class="eyebrow">YOUR KNOWLEDGE, CONNECTED</span>
-          <h2>A little more clarity.</h2>
-          <p>{{ documents.length ? `${documents.length} document${documents.length === 1 ? '' : 's'} ready` : 'No sources in this workspace' }}</p>
+          <div class="welcome-symbol"><Landmark v-if="activeAssistant === 'finance'" :size="35" :stroke-width="1.3" /><BookOpen v-else :size="35" :stroke-width="1.3" /></div>
+          <span class="eyebrow">{{ activeAssistant === 'documents' ? 'YOUR KNOWLEDGE, CONNECTED' : 'FINANCIAL DOCUMENTS, IN CONTEXT' }}</span>
+          <h2>{{ activeAssistant === 'documents' ? 'A little more clarity.' : 'Make sense of the numbers.' }}</h2>
+          <p v-if="activeAssistant === 'documents'">{{ documents.length ? `${documents.length} document${documents.length === 1 ? '' : 's'} ready` : 'No sources in this workspace' }}</p>
+          <p v-else>{{ documents.length ? 'Ask about information in your uploaded files' : 'Add statements, budgets, or reports to begin' }}</p>
         </div>
         <article v-for="turn in turns" :key="turn.id" class="turn">
           <div class="question"><span class="speaker">YOU</span><p>{{ turn.question }}</p></div>
-          <div class="response"><span class="speaker assistant-speaker"><Layers :size="14" /> ASSISTANT</span>
+          <div class="response"><span class="speaker assistant-speaker"><Layers :size="14" /> {{ assistantName.toUpperCase() }}</span>
             <template v-if="turn.result">
               <p class="answer-text" :class="{ abstention: turn.result.insufficient_evidence }">{{ turn.result.answer }}</p>
               <div v-if="turn.result.citations.length" class="citations">
@@ -228,10 +252,11 @@ onMounted(() => { void loadDocuments(); void checkHealth() })
           </div>
         </article>
       </div>
+      <p v-if="activeAssistant === 'finance'" class="finance-note">Answers are based on uploaded documents only; this is not financial advice.</p>
       <form class="composer" @submit.prevent="ask">
-        <label class="visually-hidden" for="question">Your question</label>
+        <label class="visually-hidden" for="question">{{ activeAssistant === 'finance' ? 'Your finance question' : 'Your question' }}</label>
         <textarea id="question" v-model="question" rows="2" maxlength="2000" :disabled="busy || !documents.length"
-          :placeholder="documents.length ? 'Ask a question...' : 'Add a document to begin'"
+          :placeholder="documents.length ? (activeAssistant === 'finance' ? 'Ask about fees, balances, or terms...' : 'Ask a question...') : (activeAssistant === 'finance' ? 'Add a financial document to begin' : 'Add a document to begin')"
           @keydown.enter.exact.prevent="ask" />
         <div class="composer-bottom"><span>{{ documents.length }} {{ documents.length === 1 ? 'source' : 'sources' }}</span>
           <button class="send-button" type="submit" title="Send question" aria-label="Send question"
